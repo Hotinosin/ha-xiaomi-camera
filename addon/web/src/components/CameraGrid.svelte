@@ -22,7 +22,9 @@
 {:else}
   <div class="grid">
     {#each $cameras as c (c.did)}
-      <CameraCard camera={c} />
+      {#each [0, ...(c.streams ?? []).filter((s) => s.channel > 0).map((s) => s.channel)] as channel (channel)}
+        <CameraCard camera={c} {channel} />
+      {/each}
     {/each}
   </div>
 {/if}

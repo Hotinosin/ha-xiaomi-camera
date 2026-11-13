@@ -40,7 +40,7 @@ export const message = writable(null);
 //: closed the others.
 export const openChipDid = writable(null);
 
-//: The camera currently shown enlarged, as `{ did }`, or `null`. Read by the
+//: The lens currently shown enlarged, as `{ did, channel }`, or `null`. Read by the
 //: enlarged preview and by the card whose session it is, so the two stay in
 //: agreement about which picture is where.
 export const enlargedSession = writable(null);

@@ -853,6 +853,7 @@ class BridgeApi:
             _LOGGER.warning("preview ws refused: %s cannot be published", did)
             raise web.HTTPNotFound(text=f"unknown camera {did}")
 
+        channel = self._request_channel(request, did)
         fps = _bounded(request.query.get("fps"), "fps", 0, 30, default=12)
         quality = request.query.get("quality", "medium")
         if quality not in QUALITIES:
@@ -893,7 +894,11 @@ class BridgeApi:
             try:
                 while True:
                     seq, image = await self._previews.async_frame(
-                        did, fps, quality, seq
+                        did,
+                        fps,
+                        quality,
+                        seq,
+                        **({"channel": channel} if channel else {}),
                     )
                     await ws.send_bytes(image)
             except StillsError as err:

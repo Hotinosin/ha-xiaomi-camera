@@ -151,3 +151,62 @@ async def test_channel_requests_are_validated_before_starting_media(tmp_path):
                 response = await client.get(f"/api/{route}/42?channel={channel}")
                 assert response.status == 400
         assert api._previews.async_still.await_count == 1
+
+
+async def test_preview_sources_are_separate_per_lens(monkeypatch):
+    from bridge.stills import Stills, _Source
+
+    async def start(source):
+        source._frame = source._url.encode()
+        source._frame_at = time.monotonic()
+        source._seq = 1
+
+    monkeypatch.setattr(_Source, "async_start", start)
+    stills = Stills(Restreamer(make_options(AccessMode.LOCAL)).internal_rtsp_url)
+    try:
+        _, first = await stills.async_frame("42", 12, "medium")
+        _, second = await stills.async_frame("42", 12, "medium", channel=1)
+        assert first == b"rtsp://127.0.0.1:8554/camera_42"
+        assert second == b"rtsp://127.0.0.1:8554/camera_42_original_ch2"
+        assert len(stills._sources) == 2
+    finally:
+        await stills.async_shutdown()
+
+
+@pytest.mark.enable_socket
+async def test_preview_websocket_routes_and_validates_lenses(tmp_path):
+    import asyncio
+
+    from aiohttp import WSServerHandshakeError, web
+    from aiohttp.test_utils import TestClient, TestServer
+    from test_routes import _build_bridge
+
+    api = _build_bridge(tmp_path)
+    api._registry_provider = lambda: SimpleNamespace(
+        get=lambda did: SimpleNamespace(channel_count=2),
+        is_publishable=lambda did: True,
+        power_state=lambda did: True,
+    )
+    calls = []
+
+    async def frame(did, fps, quality, after=0, channel=0):
+        calls.append((did, channel))
+        if after:
+            await asyncio.Event().wait()
+        return 1, f"lens-{channel}".encode()
+
+    api._previews = SimpleNamespace(async_frame=frame)
+    app = web.Application()
+    app.router.add_get("/api/preview/{did}/ws", api._preview_ws)
+    async with TestClient(TestServer(app)) as client:
+        async with (
+            client.ws_connect("/api/preview/42/ws") as first,
+            client.ws_connect("/api/preview/42/ws?channel=1") as second,
+        ):
+            assert (await first.receive()).data == b"lens-0"
+            assert (await second.receive()).data == b"lens-1"
+        for channel in ("-1", "2", "invalid"):
+            with pytest.raises(WSServerHandshakeError) as error:
+                await client.ws_connect(f"/api/preview/42/ws?channel={channel}")
+            assert error.value.status == 400
+        assert {channel for _, channel in calls} == {0, 1}

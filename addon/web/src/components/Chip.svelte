@@ -11,11 +11,11 @@
 
   // Called when a preference changes, so the card can restart a running
   // preview -- the point of a preview setting is to see it in the picture.
-  let { camera, onapply = () => {} } = $props();
+  let { camera, previewId = camera.did, onapply = () => {} } = $props();
 
-  let prefs = $state(prefsFor(camera.did));
+  let prefs = $state(prefsFor(previewId));
 
-  let open = $derived($openChipDid === camera.did);
+  let open = $derived($openChipDid === previewId);
 
   function fpsChoices() {
     const ceiling = Math.round(camera.stream_fps || FPS_ASSUMED);
@@ -53,12 +53,12 @@
   });
 
   function toggle() {
-    openChipDid.set(open ? null : camera.did);
+    openChipDid.set(open ? null : previewId);
   }
 
   function choose(kind, value) {
     prefs = kind === "fps" ? { ...prefs, fps: Number(value) } : { ...prefs, detail: value };
-    savePrefs(camera.did, prefs);
+    savePrefs(previewId, prefs);
     onapply(kind, value);
   }
 </script>

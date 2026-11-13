@@ -583,10 +583,12 @@ class Stills:
         return image
 
     async def async_frame(
-        self, did: str, fps: int, quality: str, after: int = 0
+        self, did: str, fps: int, quality: str, after: int = 0, channel: int = 0
     ) -> tuple[int, bytes]:
         """A picture decoded from what this add-on publishes for ``did``."""
-        return await self._async_frame(did, fps, _HEIGHT[quality], False, after)
+        return await self._async_frame(
+            did, fps, _HEIGHT[quality], False, after, channel=channel
+        )
 
     async def _async_frame(
         self,

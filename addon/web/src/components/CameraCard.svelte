@@ -12,7 +12,9 @@
   import { ICONS } from "../lib/icons.js";
   import Chip from "./Chip.svelte";
 
-  let { camera } = $props();
+  let { camera, channel = 0 } = $props();
+  let previewId = $derived(channel ? `${camera.did}:ch${channel}` : camera.did);
+  let multipleLenses = $derived(camera.streams?.some((stream) => stream.channel > 0));
 
   // -------------------------------------------------------------------------
   // Status pill and blocked state -- pure functions of reactive inputs. The
@@ -109,7 +111,7 @@
     // The enlarged preview, if this session is the one being shown large,
     // gets the same frame through its own store binding.
     const enlarged = get(enlargedSession);
-    if (enlarged?.did === camera.did) enlargedFrame.set(next);
+    if (enlarged?.did === camera.did && enlarged.channel === channel) enlargedFrame.set(next);
     // Revoked only once its replacement is on screen, or the picture would
     // blink to nothing in between.
     if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -137,7 +139,7 @@
     // showing a frame that just went stale; it says so rather than sitting
     // frozen while the card underneath it changes.
     const enlarged = get(enlargedSession);
-    if (enlarged?.did === camera.did) enlargedError.set(text);
+    if (enlarged?.did === camera.did && enlarged.channel === channel) enlargedError.set(text);
   }
 
   function cleanup() {
@@ -158,10 +160,10 @@
   }
 
   function connect() {
-    const prefs = prefsFor(camera.did);
+    const prefs = prefsFor(previewId);
     const ws = new WebSocket(socketUrl(
       `/api/preview/${encodeURIComponent(camera.did)}/ws`
-      + `?fps=${prefs.fps}&quality=${encodeURIComponent(prefs.detail)}`,
+      + `?fps=${prefs.fps}&quality=${encodeURIComponent(prefs.detail)}&channel=${channel}`,
     ));
     // Blobs, not ArrayBuffers: the only thing done with a frame is to hand
     // it to an <img>, and `createObjectURL` wants a Blob either way.
@@ -223,7 +225,7 @@
     if (!visible) return;
     // Reuses the running session rather than restarting it -- tearing it down
     // here would cost a reconnection to look at a picture already on screen.
-    enlargedSession.set({ did: camera.did });
+    enlargedSession.set({ did: camera.did, channel });
     enlargedError.set(null);
     enlargedFrame.set(frameUrl);
     overlay.set({ kind: "enlarge" });
@@ -259,7 +261,7 @@
   onDestroy(() => cleanup());
 </script>
 
-<article class="cam" data-did={camera.did}>
+<article class="cam" data-did={camera.did} data-channel={channel}>
   <div class="preview" data-preview>
     {#if blocked}
       <div class="blocked">
@@ -296,13 +298,13 @@
           <button type="button" class="ctl-btn" aria-label={t("enlarge")} onclick={enlarge}>{@html ICONS.enlarge}</button>
         </div>
       {/if}
-      <Chip {camera} onapply={applyPref} />
+      <Chip {camera} {previewId} onapply={applyPref} />
     {/if}
   </div>
 
   <div class="cam-row">
     <div class="cam-id">
-      <div class="cam-name">{camera.name}</div>
+      <div class="cam-name">{camera.name}{multipleLenses ? ` · ${channel ? `${t("lens")} ${channel + 1}` : t("defaultLens")}` : ""}</div>
       <div class="cam-model">{camera.model}{camera.stream_audio ? ` · ${t("audioOn")}` : ""}</div>
     </div>
     {#if badge || st}

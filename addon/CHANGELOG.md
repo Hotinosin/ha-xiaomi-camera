@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.3
+
+- Fixed: the bridge page now displays a separate preview card for each available
+  lens, with independent playback, preview preferences and enlarged pictures.
+- Fixed: preview WebSocket requests validate and select the requested lens.
+
+### 中文
+
+- 修复：桥接页面分别显示默认镜头和第二镜头，可独立播放、停止、调整预览和放大。
+- 修复：预览连接校验镜头编号，并读取对应镜头的画面。
+
 ## 2.0.2
 
 - Added: separate original stream and Home Assistant camera for the C300's second
