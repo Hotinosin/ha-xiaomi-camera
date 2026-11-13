@@ -73,7 +73,8 @@ RUN find "${VIRTUAL_ENV}" -name "__pycache__" -type d -prune -exec rm -rf {} + \
 FROM ghcr.io/willjayyyy/addon-xiaomi-camera-bridge:2.0.1@sha256:72a5abba7607fe8d8f3ed29e0de565610df792d0ab3f4d2c7a4afac22c47c4ef AS ffmpeg
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN /usr/local/bin/ffmpeg -version; \
+RUN set -eux; \
+    /usr/local/bin/ffmpeg -version; \
     /usr/local/bin/ffmpeg -hide_banner -encoders > /tmp/encoders.txt 2>/dev/null; \
     grep -q libx264 /tmp/encoders.txt; \
     grep -q libx265 /tmp/encoders.txt; \
