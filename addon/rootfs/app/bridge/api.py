@@ -430,7 +430,14 @@ class BridgeApi:
             "rtsp_url_h264": self._restreamer.rtsp_url_h264(description.did),
             # Read by the integration in place of the two fixed fields above,
             # which stay for an integration older than this add-on.
-            "streams": self._restreamer.stream_descriptions(description.did),
+            "streams": (
+                self._restreamer.stream_descriptions(
+                    description.did, channel_count=description.channel_count
+                )
+                if getattr(description, "channel_count", 1) > 1
+                and description.path is VideoPath.OFFICIAL
+                else self._restreamer.stream_descriptions(description.did)
+            ),
             "rtsp_requires_credentials": self._restreamer.requires_credentials,
             # Whether the address above is reachable from anything other than
             # this host -- distinct from whether a password is required. The
@@ -463,8 +470,11 @@ class BridgeApi:
             # 409 rather than 503: the bridge is healthy and the request is
             # well-formed; the camera is simply switched off.
             raise web.HTTPConflict(text=f"{did} is switched off")
+        channel = self._request_channel(request, did)
         try:
-            image = await self._previews.async_still(did, _max_age(request))
+            image = await self._previews.async_still(
+                did, _max_age(request), **({"channel": channel} if channel else {})
+            )
         except StillsError as err:
             if await self._read_power_state(did) is False:
                 raise web.HTTPConflict(text=f"{did} is switched off") from err
@@ -480,7 +490,10 @@ class BridgeApi:
     async def _stream(self, request: web.Request) -> web.StreamResponse:
         """Serve the camera as MPEG-TS, for go2rtc to demux."""
         did = request.match_info["did"]
+        channel = self._request_channel(request, did)
         session = self._session_for(did)
+        if session is not None and channel:
+            session = session.channel(channel)
         if session is None:
             raise web.HTTPNotFound(text=f"unknown camera {did}")
 
@@ -589,7 +602,10 @@ class BridgeApi:
             raise web.HTTPServiceUnavailable(text="Xiaomi account is not linked")
         payload = await _json_body(request)
         value = bool(payload.get("value"))
-        await registry.async_set_power(did, value)
+        try:
+            await registry.async_set_power(did, value)
+        except ValueError as err:
+            raise web.HTTPBadRequest(text=str(err)) from err
         return web.json_response({"status": "ok", "value": value})
 
     async def _link_begin(self, request: web.Request) -> web.Response:
@@ -1109,6 +1125,18 @@ class BridgeApi:
         if registry is None:
             return False
         return registry.is_publishable(did)
+
+    def _request_channel(self, request: web.Request, did: str) -> int:
+        try:
+            channel = int(request.query.get("channel", "0"))
+        except ValueError as err:
+            raise web.HTTPBadRequest(text="invalid camera channel") from err
+        registry = self._registry_provider()
+        info = registry.get(did) if registry is not None and channel else None
+        count = getattr(info, "channel_count", 1) or 1
+        if channel < 0 or channel >= count:
+            raise web.HTTPBadRequest(text="invalid camera channel")
+        return channel
 
     def _session_for(self, did: str):
         registry: CameraRegistry | None = self._registry_provider()

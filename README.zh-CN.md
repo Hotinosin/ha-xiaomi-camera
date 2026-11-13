@@ -35,7 +35,7 @@ Frigate、Scrypted 或任意 NVR 都能直接用。
 设置 → 加载项 → 加载项商店 → ⋮ → 仓库，粘贴：
 
 ```
-https://github.com/willjayyyy/ha-xiaomi-camera
+https://github.com/Hotinosin/ha-xiaomi-camera
 ```
 
 **加完就结束了，这里什么都不要装。** 你只是把加载项放到第 3 步够得着的地方。
@@ -89,7 +89,7 @@ streams*）。
 docker run -d --name xiaomi-camera \
   --network host \
   -v xiaomi-camera:/data \
-  ghcr.io/willjayyyy/addon-xiaomi-camera-bridge:latest
+  ghcr.io/hotinosin/addon-xiaomi-camera-bridge:latest
 ```
 
 此时所有监听都绑在 `127.0.0.1`，别的机器根本连不上来。打开页面用 SSH 隧道 ——
@@ -107,7 +107,7 @@ docker run -d --name xiaomi-camera \
   -e XIAOMI_CAMERA_RTSP_USERNAME=xiaomi \
   -e XIAOMI_CAMERA_RTSP_PASSWORD=... \
   -e XIAOMI_CAMERA_WEB_PASSWORD=... \
-  ghcr.io/willjayyyy/addon-xiaomi-camera-bridge:latest
+  ghcr.io/hotinosin/addon-xiaomi-camera-bridge:latest
 ```
 
 之后视频流地址是 `rtsp://<主机>:8554/camera_<设备 id>`，页面 `http://<主机>:8098`

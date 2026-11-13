@@ -753,7 +753,7 @@ class TestAStillIsAsFreshAsItWasAskedFor:
     ) -> None:
         manager = Stills(url_for, lambda did: 1.0)
         source = _Source("A", url_for("A"), 0, None, True)
-        manager._sources[("A", 0, None, True)] = source
+        manager._sources[("A", 0, 0, None, True)] = source
         source._frame = b"\xff\xd8old\xff\xd9"
         source._seq = 1
         source._frame_at = time.monotonic() - 4.0
@@ -767,7 +767,7 @@ class TestAStillIsAsFreshAsItWasAskedFor:
     ) -> None:
         manager = Stills(url_for, lambda did: 1.0)
         source = _Source("A", url_for("A"), 0, None, True)
-        manager._sources[("A", 0, None, True)] = source
+        manager._sources[("A", 0, 0, None, True)] = source
         source._frame = b"\xff\xd8fresh\xff\xd9"
         source._seq = 1
         source._frame_at = time.monotonic() - 1.0

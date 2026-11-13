@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass
 
 from miot.client import MIoTClient
-from miot.types import MIoTCameraInfo, MIoTGetPropertyParam
+from miot.types import MIoTCameraInfo, MIoTCameraStatus, MIoTGetPropertyParam
 
 from . import go2rtc_xiaomi
 from .const import POWER_PIID, POWER_SIID
@@ -135,6 +135,7 @@ class CameraDescription:
     #: otherwise carries. Computed by ``CameraRegistry._path_for``, the one
     #: place that calls ``paths.path_for`` for a camera description.
     path: VideoPath | None
+    power_supported: bool = True
 
     @property
     def publishable(self) -> bool:
@@ -172,6 +173,7 @@ class CameraDescription:
             "online": self.online,
             "lan_online": self.lan_online,
             "powered_on": self.powered_on,
+            "power_supported": self.power_supported,
             "requires_pin": self.requires_pin,
             "support": self.support,
             # Sent as its own field rather than left for the reader to derive
@@ -340,6 +342,14 @@ class CameraRegistry:
         # the device being unreachable -- and once compatibility mode can
         # stream it, a hardcoded "offline" would be the only thing wrong
         # with the card.
+        # The SDK's class filter omits this visual feeder, despite its P2P camera.
+        for did, info in all_devices.items():
+            if info.model == "xiaomi.feeder.iv2002" and did not in self._cameras:
+                self._cameras[did] = MIoTCameraInfo(
+                    **info.model_dump(),
+                    channel_count=1,
+                    camera_status=MIoTCameraStatus.DISCONNECTED,
+                )
         readable = [did for did in all_devices if self._path_for(did) is not None]
         power_states = await self._async_read_power_states(readable)
         self._power_states = power_states
@@ -353,6 +363,7 @@ class CameraRegistry:
                     model=info.model,
                     manufacturer=info.manufacturer,
                     channel_count=info.channel_count or 1,
+                    power_supported=info.model != "xiaomi.feeder.iv2002",
                     online=bool(info.online),
                     lan_online=bool(info.lan_online),
                     powered_on=power_states.get(did),
@@ -426,6 +437,9 @@ class CameraRegistry:
 
     async def async_set_power(self, did: str, value: bool) -> None:
         """Switch a camera on or off."""
+        info = self._all_devices.get(did)
+        if info is not None and info.model == "xiaomi.feeder.iv2002":
+            raise ValueError("Camera power control is unavailable for this feeder")
         from miot.types import MIoTSetPropertyParam
 
         await self._client._http_client.set_prop_async(
@@ -438,6 +452,13 @@ class CameraRegistry:
         Failures degrade to ``None`` rather than propagating: an unreadable
         power state should not prevent the rest of the camera list from loading.
         """
+        # siid=2/piid=1 is camera control only; never apply it to a feeder.
+        dids = [
+            did
+            for did in dids
+            if getattr(self._all_devices.get(did), "model", "")
+            != "xiaomi.feeder.iv2002"
+        ]
         if not dids:
             return {}
 

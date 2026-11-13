@@ -1,11 +1,11 @@
 ---
 name: Xiaomi Camera Bridge
-version: "2.0.1"
+version: "2.0.2"
 slug: xiaomi_camera_bridge
 description: >-
   Streams Xiaomi cameras over the vendor's peer-to-peer protocol and republishes
   them as standard RTSP for Home Assistant and any other NVR.
-url: https://github.com/willjayyyy/ha-xiaomi-camera
+url: https://github.com/Hotinosin/ha-xiaomi-camera
 arch:
   - amd64
   - aarch64
@@ -56,4 +56,4 @@ schema:
 # Prebuilt images are published for each supported architecture, so a normal
 # install pulls one rather than building locally. Supervisor substitutes
 # {arch} at install time.
-image: ghcr.io/willjayyyy/{arch}-addon-xiaomi-camera-bridge
+image: ghcr.io/hotinosin/{arch}-addon-xiaomi-camera-bridge

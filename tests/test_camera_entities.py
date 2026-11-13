@@ -8,6 +8,7 @@ reach.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -143,6 +144,51 @@ async def test_the_original_entity_is_named_after_the_device(hass) -> None:
     entity_id = registry.async_get_entity_id("camera", DOMAIN, "42")
     assert entity_id is not None
     assert hass.states.get(entity_id).attributes["friendly_name"] == "Living room"
+
+
+async def test_second_lens_entity_uses_its_own_snapshot(hass, monkeypatch) -> None:
+    from homeassistant.components.camera import async_get_image
+
+    camera = _camera(keys=("original", "original_ch2"))
+    camera = replace(
+        camera,
+        channel_count=2,
+        streams=tuple(
+            replace(stream, channel=1 if stream.key == "original_ch2" else 0)
+            for stream in camera.streams
+        ),
+    )
+    monkeypatch.setattr(sys.modules[__name__], "_camera", lambda: camera)
+    entry = await _setup(
+        hass,
+        {
+            "cameras": ["42"],
+            "primary_stream": "original",
+            "camera_streams": {"42": ["original", "original_ch2"]},
+        },
+    )
+    registry = er.async_get(hass)
+    assert registry.async_get_entity_id("camera", DOMAIN, "42") is not None
+    entity_id = registry.async_get_entity_id("camera", DOMAIN, "42_original_ch2")
+    assert entity_id is not None
+    assert hass.states.get(entity_id).attributes["friendly_name"] == (
+        "Living room Lens 2 (original)"
+    )
+    snapshot = entry.runtime_data.client.async_snapshot = AsyncMock(
+        return_value=b"jpeg"
+    )
+    image = await async_get_image(hass, entity_id)
+    assert image.content == b"jpeg"
+    snapshot.assert_awaited_once_with("42", channel=1)
+
+
+async def test_feeder_does_not_create_camera_power_switch(hass, monkeypatch) -> None:
+    camera = replace(_camera(), model="xiaomi.feeder.iv2002", power_supported=False)
+    monkeypatch.setattr(sys.modules[__name__], "_camera", lambda: camera)
+    await _setup(hass, {"cameras": ["42"], "primary_stream": "original"})
+    registry = er.async_get(hass)
+    assert registry.async_get_entity_id("camera", DOMAIN, "42") is not None
+    assert registry.async_get_entity_id("switch", DOMAIN, "42_power") is None
 
 
 async def test_the_primary_entity_keeps_the_bare_device_id(hass) -> None:

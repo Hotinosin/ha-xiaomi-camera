@@ -30,6 +30,7 @@ class CameraStream:
     codec: str
     height: int | None
     url: str
+    channel: int = 0
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> CameraStream:
@@ -39,6 +40,7 @@ class CameraStream:
             codec=str(data.get("codec") or ""),
             height=int(height) if height is not None else None,
             url=str(data.get("url") or ""),
+            channel=int(data.get("channel") or 0),
         )
 
 
@@ -62,6 +64,7 @@ class BridgeCamera:
     #: this list, which the integration reports rather than working around --
     #: see `coordinator._async_report_outdated_addon`.
     streams: tuple[CameraStream, ...] = ()
+    power_supported: bool = True
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BridgeCamera:
@@ -74,6 +77,7 @@ class BridgeCamera:
             online=bool(data.get("online")),
             lan_online=bool(data.get("lan_online")),
             powered_on=data.get("powered_on"),
+            power_supported=bool(data.get("power_supported", True)),
             rtsp_url=str(data.get("rtsp_url") or ""),
             rtsp_url_h264=str(data.get("rtsp_url_h264") or ""),
             streams=tuple(
@@ -107,13 +111,15 @@ class BridgeClient:
         payload = await self._get_json("/api/cameras")
         return [BridgeCamera.from_dict(item) for item in payload.get("cameras", [])]
 
-    async def async_snapshot(self, did: str) -> bytes:
+    async def async_snapshot(self, did: str, channel: int = 0) -> bytes:
         """Fetch a still image.
 
         Snapshots are slower than a typical HTTP call because the bridge may
         need to establish a peer-to-peer session and wait for a keyframe.
         """
         url = f"{self._base}/api/snapshot/{did}"
+        if channel:
+            url += f"?channel={channel}"
         try:
             async with self._session.get(
                 url, timeout=aiohttp.ClientTimeout(total=25)

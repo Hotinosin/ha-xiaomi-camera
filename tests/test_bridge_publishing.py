@@ -57,7 +57,7 @@ class _FakeRestreamer:
         self.applied: dict[str, object] | None = None
 
     async def async_apply(
-        self, cameras, *, compat_urls=None, explicit: bool = False
+        self, cameras, *, compat_urls=None, explicit: bool = False, channels=None
     ) -> None:
         self.applied = dict(cameras)
 

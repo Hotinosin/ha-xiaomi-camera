@@ -116,11 +116,12 @@ class MIoTCameraCodec(int, enum.Enum):
 class MIoTCameraInfo:
     """Stands in for ``miot.types.MIoTCameraInfo``.
 
-    ``bridge.cameras`` only names this type in annotations, and
-    ``from __future__ import annotations`` leaves those unevaluated at
-    runtime -- so nothing here needs to model the real dataclass's eleven
-    required fields, just exist as an importable name.
+    Store the SDK fields supplied by discovery. Real Pydantic construction is
+    checked separately against the pinned SDK before hardware deployment.
     """
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 
 class MIoTGetPropertyParam:

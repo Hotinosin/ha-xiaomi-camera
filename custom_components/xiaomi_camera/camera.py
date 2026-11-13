@@ -127,7 +127,17 @@ class XiaomiCamera(XiaomiCameraEntity, Camera):
         an unexplained timeout -- gives the user nothing to act on.
         """
         try:
-            return await self.coordinator.client.async_snapshot(self._did)
+            camera = self.camera
+            channel = (
+                next(
+                    (s.channel for s in camera.streams if s.key == self._stream_key), 0
+                )
+                if camera
+                else 0
+            )
+            return await self.coordinator.client.async_snapshot(
+                self._did, **({"channel": channel} if channel else {})
+            )
         except CameraOffError:
             _LOGGER.debug(
                 "%s is switched off, so no image is available", self.entity_id

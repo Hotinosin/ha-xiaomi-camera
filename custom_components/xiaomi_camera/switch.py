@@ -40,7 +40,11 @@ async def async_setup_entry(
         for still shows up in searches, automations and voice assistants.
         """
         wanted = selected(entry, coordinator.data)
-        new = [did for did in wanted if did not in known]
+        new = [
+            did
+            for did in wanted
+            if did not in known and coordinator.data[did].power_supported
+        ]
         if not new:
             return
         known.update(new)

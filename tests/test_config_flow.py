@@ -153,6 +153,7 @@ async def test_the_dropdown_labels_follow_the_users_language(hass) -> None:
     hass.config.language = "en"
     assert await _stream_labels(hass) == {
         "original": "Original stream",
+        "original_ch2": "Lens 2 (original)",
         "h265": "H.265 full size",
         "h265_1440": "H.265 1440p",
         "h265_1080": "H.265 1080p",

@@ -5,14 +5,15 @@
     "hassio"
   ],
   "codeowners": [
-    "@willjayyyy"
+    "@willjayyyy",
+    "@Hotinosin"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/willjayyyy/ha-xiaomi-camera",
+  "documentation": "https://github.com/Hotinosin/ha-xiaomi-camera",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/willjayyyy/ha-xiaomi-camera/issues",
+  "issue_tracker": "https://github.com/Hotinosin/ha-xiaomi-camera/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "2.0.1"
+  "version": "2.0.2"
 }

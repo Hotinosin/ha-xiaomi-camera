@@ -497,13 +497,13 @@ class Stills:
         #: what the stream does simply stops the old source being asked for
         #: and the reaper collects it. There is no escalation path to get
         #: wrong because there is no escalation.
-        self._sources: dict[tuple[str, int, int | None, bool], _Source] = {}
+        self._sources: dict[tuple[str, int, int, int | None, bool], _Source] = {}
         #: Teardowns still running. Referenced only so they are not garbage
         #: collected before they finish -- nothing waits on them.
         self._closing: set[asyncio.Task] = set()
         self._reaper: asyncio.Task | None = None
 
-    def _retire(self, key: tuple[str, int, str]) -> None:
+    def _retire(self, key: tuple[str, int, int, int | None, bool]) -> None:
         """Take a source out of service. Cannot block, by construction.
 
         There is deliberately no lock here. The table is a dict mutated from
@@ -543,7 +543,9 @@ class Stills:
         if error is not None:
             _LOGGER.warning("Could not stop a preview decoder: %s", safe_error(error))
 
-    async def async_still(self, did: str, max_age: float | None = None) -> bytes:
+    async def async_still(
+        self, did: str, max_age: float | None = None, channel: int = 0
+    ) -> bytes:
         """One picture for a caller that wants the latest, not every one.
 
         Snapshots used to come from the vendor library's own decoded-JPEG
@@ -576,7 +578,7 @@ class Stills:
         # scales for itself, so it keeps the camera's own size. Measured, the
         # scaling would have saved 0.8 of a percentage point.
         _, image = await self._async_frame(
-            did, 0, None, keyframes, after=0, max_age=max_age
+            did, 0, None, keyframes, after=0, max_age=max_age, channel=channel
         )
         return image
 
@@ -594,11 +596,17 @@ class Stills:
         keyframes_only: bool,
         after: int = 0,
         max_age: float | None = None,
+        channel: int = 0,
     ) -> tuple[int, bytes]:
-        key = (did, fps, height, keyframes_only)
+        key = (did, channel, fps, height, keyframes_only)
         source = self._sources.get(key)
         if source is None:
-            source = _Source(did, self._url_for(did), fps, height, keyframes_only)
+            url = (
+                self._url_for(did)
+                if channel == 0
+                else self._url_for(did, channel=channel)
+            )
+            source = _Source(did, url, fps, height, keyframes_only)
             # Seated before the spawn, not after. This is what makes a second
             # caller share this source instead of opening a rival one -- the
             # job a lock used to do -- and it is what lets a departing camera

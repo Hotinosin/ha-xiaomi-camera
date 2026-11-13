@@ -38,7 +38,7 @@ it is why the same address goes in twice.
 Settings → Add-ons → Add-on Store → ⋮ → Repositories, and paste:
 
 ```
-https://github.com/willjayyyy/ha-xiaomi-camera
+https://github.com/Hotinosin/ha-xiaomi-camera
 ```
 
 Adding it is the whole step — **do not install anything here.** You are only
@@ -99,7 +99,7 @@ Keep everything on one machine, and nothing needs a password:
 docker run -d --name xiaomi-camera \
   --network host \
   -v xiaomi-camera:/data \
-  ghcr.io/willjayyyy/addon-xiaomi-camera-bridge:latest
+  ghcr.io/hotinosin/addon-xiaomi-camera-bridge:latest
 ```
 
 Every listener is then bound to `127.0.0.1`, so nothing else can open a
@@ -119,7 +119,7 @@ docker run -d --name xiaomi-camera \
   -e XIAOMI_CAMERA_RTSP_USERNAME=xiaomi \
   -e XIAOMI_CAMERA_RTSP_PASSWORD=... \
   -e XIAOMI_CAMERA_WEB_PASSWORD=... \
-  ghcr.io/willjayyyy/addon-xiaomi-camera-bridge:latest
+  ghcr.io/hotinosin/addon-xiaomi-camera-bridge:latest
 ```
 
 The streams are then at `rtsp://<host>:8554/camera_<device id>`, and the page

@@ -552,7 +552,7 @@ class TestStreamKeysMatchTranslationLabels:
         """
         table = json.loads(path.read_text(encoding="utf-8"))["selector"]
         labelled = set(table["stream_key"]["options"])
-        assert {spec.key for spec in STREAM_SPECS} == labelled
+        assert {spec.key for spec in STREAM_SPECS} | {"original_ch2"} == labelled
 
     @pytest.mark.parametrize("path", _LABEL_FILES)
     def test_entity_labels_cover_every_stream_but_the_root(self, path: Path) -> None:
@@ -565,7 +565,7 @@ class TestStreamKeysMatchTranslationLabels:
         survived: it read as a deliberate label and was really a lookup miss.
         """
         table = json.loads(path.read_text(encoding="utf-8"))["entity"]["camera"]
-        expected = {spec.key for spec in STREAM_SPECS} - {ROOT_KEY}
+        expected = ({spec.key for spec in STREAM_SPECS} - {ROOT_KEY}) | {"original_ch2"}
         assert set(table) == expected
 
     @pytest.mark.parametrize("path", _LABEL_FILES)

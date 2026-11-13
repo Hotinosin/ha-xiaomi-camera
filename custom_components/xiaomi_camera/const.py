@@ -9,7 +9,7 @@ DOMAIN: Final = "xiaomi_camera"
 
 #: Slug of the companion add-on. The integration can install and start it on
 #: Home Assistant OS so the user never has to set it up separately.
-ADDON_SLUG: Final = "xiaomi_camera_bridge"
+ADDON_SLUG: Final = "790982a8_xiaomi_camera_bridge"
 ADDON_NAME: Final = "Xiaomi Camera Bridge"
 
 #: Which cameras to bring into Home Assistant, by device id. Absent means all

@@ -287,12 +287,7 @@ def stream_name(did: str, key: str = ROOT_KEY) -> str:
     its entity -- unpairing HomeKit and orphaning history, the exact failure
     this project has already shipped once (see `paths.py`'s own docstring).
 
-    There is deliberately no name here for a dual-lens camera's second lens.
-    One was added on the strength of "the official path already does this",
-    which was not true of the official path and never had been; nothing
-    produced it (the refused-camera branch reports one channel) and nothing
-    consumed it (`stream_descriptions` never named it). A real dual-lens
-    camera gets this designed then, with evidence.
+    Extra lenses use original_ch2, original_ch3, ... as their stable keys.
     """
     return f"camera_{did}" if key == ROOT_KEY else f"camera_{did}_{key}"
 
@@ -410,6 +405,7 @@ def build_config(
     *,
     compat_urls: Mapping[str, str] | None = None,
     errors: dict[str, str] | None = None,
+    channels: Mapping[str, int] | None = None,
 ) -> dict:
     """Render the go2rtc configuration.
 
@@ -462,6 +458,11 @@ def build_config(
         # would spend three seconds of cold start probing a container it did
         # not need to, to do a job go2rtc already does.
         streams[root] = root_source
+        if settings.path is VideoPath.OFFICIAL:
+            for channel in range(1, (channels or {}).get(did, 1)):
+                streams[stream_name(did, f"original_ch{channel + 1}")] = (
+                    f"{root_source}?channel={channel}"
+                )
         for spec in STREAM_SPECS:
             if spec.key == ROOT_KEY:
                 continue
@@ -546,6 +547,7 @@ class Restreamer:
         self._process: asyncio.subprocess.Process | None = None
         self._supervisor: asyncio.Task[None] | None = None
         self._cameras: dict[str, Resolved] = {}
+        self._channels: dict[str, int] = {}
         #: What `async_apply` was last called with, alongside `_cameras`,
         #: purely so a later call can tell whether anything actually changed
         #: -- see the comparison in `async_apply`. Kept out of `_cameras`'s
@@ -607,7 +609,9 @@ class Restreamer:
         """RTSP URL for the H.264 version of a camera's stream."""
         return f"rtsp://{LOOPBACK}:{RTSP_PORT}/{stream_name(did, 'h264')}"
 
-    def stream_descriptions(self, did: str) -> list[dict[str, object]]:
+    def stream_descriptions(
+        self, did: str, channel_count: int = 1
+    ) -> list[dict[str, object]]:
         """Every variant published for a camera, for the integration to read.
 
         Sent rather than hardcoded on the other side so the two components can
@@ -624,9 +628,21 @@ class Restreamer:
                 "url": f"rtsp://{LOOPBACK}:{RTSP_PORT}/{stream_name(did, spec.key)}",
             }
             for spec in STREAM_SPECS
+        ] + [
+            {
+                "key": f"original_ch{channel + 1}",
+                "codec": "original",
+                "height": None,
+                "channel": channel,
+                "url": (
+                    f"rtsp://{LOOPBACK}:{RTSP_PORT}/"
+                    f"{stream_name(did, f'original_ch{channel + 1}')}"
+                ),
+            }
+            for channel in range(1, channel_count)
         ]
 
-    def internal_rtsp_url(self, did: str) -> str:
+    def internal_rtsp_url(self, did: str, channel: int = 0) -> str:
         """RTSP URL for this process's own use, credentials included.
 
         Separate from :meth:`rtsp_url` on purpose. That one is handed to Home
@@ -635,13 +651,14 @@ class Restreamer:
         leaves it. Two callers with genuinely different requirements, rather
         than one URL compromising for both.
         """
+        key = ROOT_KEY if channel == 0 else f"original_ch{channel + 1}"
         if not self.requires_credentials:
-            return self.rtsp_url(did)
+            return f"rtsp://{LOOPBACK}:{RTSP_PORT}/{stream_name(did, key)}"
         credentials = (
             f"{quote(self._options.rtsp_username, safe='')}:"
             f"{quote(self._options.rtsp_password, safe='')}@"
         )
-        return f"rtsp://{credentials}{LOOPBACK}:{RTSP_PORT}/{stream_name(did)}"
+        return f"rtsp://{credentials}{LOOPBACK}:{RTSP_PORT}/{stream_name(did, key)}"
 
     async def async_apply(
         self,
@@ -649,6 +666,7 @@ class Restreamer:
         *,
         compat_urls: Mapping[str, str] | None = None,
         explicit: bool = False,
+        channels: Mapping[str, int] | None = None,
     ) -> None:
         """Make the running configuration match `cameras`.
 
@@ -684,15 +702,18 @@ class Restreamer:
         camera's address changing, a periodic re-read of the device list --
         whose viewers are left on their existing connection.
         """
+        channels = dict(channels or {})
         compat_urls = dict(compat_urls or {})
         if (
             cameras == self._cameras
+            and channels == self._channels
             and compat_urls == self._compat_urls
             and self._process is not None
         ):
             return
 
         self._cameras = dict(cameras)
+        self._channels = channels
         self._compat_urls = compat_urls
         errors: dict[str, str] = {}
         config = build_config(
@@ -700,6 +721,7 @@ class Restreamer:
             self._cameras,
             compat_urls=self._compat_urls,
             errors=errors,
+            channels=self._channels,
         )
         self._stream_errors = errors
         previous_streams = self._streams

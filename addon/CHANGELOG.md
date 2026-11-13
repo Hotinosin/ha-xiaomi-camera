@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.2
+
+- Added: separate original stream and Home Assistant camera for the C300's second
+  lens, sharing one P2P connection with the first lens.
+- Added: experimental video discovery for xiaomi.feeder.iv2002; camera power
+  properties are never read or written on the feeder.
+- Changed: this fork installs images from Hotinosin's repository.
+
+### 中文
+
+- 新增：C300 第二镜头的独立原始画面及 HA 摄像头实体，两个镜头共用 P2P 连接。
+- 新增：实验性接入米家智能宠物喂食器 2 可视版；不读取或操作喂食器的电源属性。
+- 调整：从 Hotinosin 的仓库安装本分支镜像。
+
 ## 2.0.1
 
 - Fixed: right after signing into compatibility mode, a camera's settings

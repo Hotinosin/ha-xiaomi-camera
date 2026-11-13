@@ -290,6 +290,7 @@ class Bridge:
             resolved,
             compat_urls=compat_urls,
             explicit=explicit,
+            channels={c.did: c.channel_count for c in publishable},
         )
         self._previews.drop({c.did for c in publishable})
 
