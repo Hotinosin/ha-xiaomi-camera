@@ -49,6 +49,7 @@ jobs:
         with:
           architectures: ${{ env.ARCHITECTURES }}
           image-name: ${{ env.IMAGE_NAME }}
+          registry-prefix: ghcr.io/hotinosin
 
   build:
     name: Build ${{ matrix.arch }}
@@ -97,6 +98,7 @@ jobs:
         with:
           architectures: ${{ env.ARCHITECTURES }}
           image-name: ${{ env.IMAGE_NAME }}
+          registry-prefix: ghcr.io/hotinosin
           image-tags: |
             ${{ needs.init.outputs.version }}
             latest
