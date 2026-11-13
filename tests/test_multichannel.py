@@ -129,7 +129,7 @@ async def test_snapshot_sources_and_caches_are_separate_per_lens(monkeypatch):
         await stills.async_shutdown()
 
 
-@pytest.mark.enable_socket
+@pytest.mark.usefixtures("socket_enabled")
 async def test_channel_requests_are_validated_before_starting_media(tmp_path):
     from aiohttp.test_utils import TestClient, TestServer
     from test_routes import _build_bridge
@@ -173,7 +173,7 @@ async def test_preview_sources_are_separate_per_lens(monkeypatch):
         await stills.async_shutdown()
 
 
-@pytest.mark.enable_socket
+@pytest.mark.usefixtures("socket_enabled")
 async def test_preview_websocket_routes_and_validates_lenses(tmp_path):
     import asyncio
 
