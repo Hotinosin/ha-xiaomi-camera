@@ -289,3 +289,5 @@ each under its own licence:
   project.
 
 Built by studying [Xiaomi Miloco](https://github.com/XiaoMi/xiaomi-miloco).
+
+This fork copies FFmpeg 7.1 from the digest-pinned upstream 2.0.1 image; its original BtbN download assets have expired. The bridge and integration are built from this repository.

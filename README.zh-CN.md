@@ -258,3 +258,5 @@ Home Assistant 可以显示，局域网上的其他设备无法访问。
   其源代码可从上述项目获取。
 
 实现参考了 [Xiaomi Miloco](https://github.com/XiaoMi/xiaomi-miloco)。
+
+本分支从固定摘要的原版 2.0.1 镜像复用 FFmpeg 7.1（原 BtbN 下载资产已失效），桥接和集成代码仍从本仓库构建。
